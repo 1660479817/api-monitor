@@ -16,14 +16,16 @@
 
 每个 Key 的检测均为两步：**① 拉取模型列表 → ② 逐模型 chat 探测**。
 
-| 平台 | 配置名 | ① 获取模型 | ② 模型探测 |
-|------|--------|------------|------------|
-| OpenAI | `openai` | `GET /models` | `POST /chat/completions` |
-| OpenAI 兼容中转 | `openai-compatible` | `GET /models` | `POST /chat/completions` |
-| Anthropic | `anthropic` | `GET /v1/models` | `POST /v1/messages` |
-| Google Gemini | `gemini` | `GET /v1beta/models` | `POST .../models/{model}:generateContent` |
-| DeepSeek | `deepseek` | `GET /models` | `POST /chat/completions` |
-| OpenRouter | `openrouter` | `GET /models` | `POST /chat/completions` |
+
+| 平台            | 配置名                 | ① 获取模型               | ② 模型探测                                    |
+| ------------- | ------------------- | -------------------- | ----------------------------------------- |
+| OpenAI        | `openai`            | `GET /models`        | `POST /chat/completions`                  |
+| OpenAI 兼容中转   | `openai-compatible` | `GET /models`        | `POST /chat/completions`                  |
+| Anthropic     | `anthropic`         | `GET /v1/models`     | `POST /v1/messages`                       |
+| Google Gemini | `gemini`            | `GET /v1beta/models` | `POST .../models/{model}:generateContent` |
+| DeepSeek      | `deepseek`          | `GET /models`        | `POST /chat/completions`                  |
+| OpenRouter    | `openrouter`        | `GET /models`        | `POST /chat/completions`                  |
+
 
 ## 环境要求
 
@@ -31,40 +33,102 @@
 
 ## 安装
 
-建议使用虚拟环境，避免依赖装到系统 Python：
+建议使用虚拟环境，且**必须用 Python 3.11+ 创建**。
+
+### Linux / macOS
 
 ```bash
 cd api-monitor
 
-# 创建并激活虚拟环境（Python 3.11+）
-python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+# 若已有旧 .venv，先删除
+rm -rf .venv
 
-# 安装项目（可编辑模式，改代码即时生效）
+# 创建虚拟环境（确保 python3 为 3.11+）
+python3 -m venv .venv
+# 若系统 python3 版本过低，可指定路径，例如：
+# /path/to/python3.11 -m venv .venv
+
+# 激活虚拟环境
+source .venv/bin/activate
+
+# 升级 pip 并安装
+pip install --upgrade pip
 pip install -e .
 ```
 
-之后每次使用前激活虚拟环境即可：`source .venv/bin/activate`
+### Windows（CMD）
+
+```cmd
+cd api-monitor
+
+rmdir /s /q .venv
+
+py -3.11 -m venv .venv
+.venv\Scripts\activate.bat
+
+python -m pip install --upgrade pip
+pip install -e .
+```
+
+### Windows（PowerShell）
+
+```powershell
+cd api-monitor
+
+Remove-Item -Recurse -Force .venv -ErrorAction SilentlyContinue
+
+py -3.11 -m venv .venv
+.venv\Scripts\Activate.ps1
+
+python -m pip install --upgrade pip
+pip install -e .
+```
+
+> PowerShell 若提示无法运行脚本，先执行：`Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+
+### 每次使用前：激活虚拟环境
+
+| 系统 | 命令 |
+|------|------|
+| Linux / macOS | `source .venv/bin/activate` |
+| Windows CMD | `.venv\Scripts\activate.bat` |
+| Windows PowerShell | `.venv\Scripts\Activate.ps1` |
 
 ## 快速开始
 
-```bash
-# 复制示例配置并填入真实 Key
-cp config.example.yaml config.yaml
+激活虚拟环境后：
 
-# 检测全部平台
+### Linux / macOS
+
+```bash
+cp config.example.yaml config.yaml
+# 编辑 config.yaml，填入真实 API Key
+
 api-monitor --config config.yaml
 ```
 
+### Windows（CMD / PowerShell）
+
+```cmd
+copy config.example.yaml config.yaml
+REM 编辑 config.yaml，填入真实 API Key
+
+api-monitor --config config.yaml
+```
+
+PowerShell 复制配置可用：`Copy-Item config.example.yaml config.yaml`
+
 ## 命令行参数
 
-| 参数 | 简写 | 说明 | 默认值 |
-|------|------|------|--------|
-| `--config` | `-c` | 配置文件路径 | `config.yaml` |
-| `--provider` | `-p` | 仅检测指定平台 | 全部 |
-| `--json` | | 以 JSON 格式输出到 stdout | 关闭 |
-| `--timeout` | `-t` | 单次请求超时（秒） | 配置文件中的值 |
-| `--concurrency` | `-n` | 并发检测数 | 配置文件中的值 |
+
+| 参数              | 简写   | 说明                  | 默认值           |
+| --------------- | ---- | ------------------- | ------------- |
+| `--config`      | `-c` | 配置文件路径              | `config.yaml` |
+| `--provider`    | `-p` | 仅检测指定平台             | 全部            |
+| `--json`        |      | 以 JSON 格式输出到 stdout | 关闭            |
+| `--timeout`     | `-t` | 单次请求超时（秒）           | 配置文件中的值       |
+| `--concurrency` | `-n` | 并发检测数               | 配置文件中的值       |
+
 
 ### 示例
 
@@ -122,16 +186,18 @@ providers:
 
 终端表格包含以下字段：
 
-| 字段 | 说明 |
-|------|------|
-| Platform | 平台名称 |
-| Alias | Key 别名 |
-| Model | 被探测的模型名；Key 级失败（如 /models 不可用）时显示 `-` |
-| Key (masked) | 脱敏后的 Key，如 `sk-abc...xyz` |
-| Status | `OK` 或 `FAILED` |
-| HTTP | HTTP 状态码 |
-| Latency | 请求耗时 |
-| Error | 失败原因 |
+
+| 字段           | 说明                                    |
+| ------------ | ------------------------------------- |
+| Platform     | 平台名称                                  |
+| Alias        | Key 别名                                |
+| Model        | 被探测的模型名；Key 级失败（如 /models 不可用）时显示 `-` |
+| Key (masked) | 脱敏后的 Key，如 `sk-abc...xyz`             |
+| Status       | `OK` 或 `FAILED`                       |
+| HTTP         | HTTP 状态码                              |
+| Latency      | 请求耗时                                  |
+| Error        | 失败原因                                  |
+
 
 JSON 输出示例：
 
@@ -152,11 +218,13 @@ JSON 输出示例：
 
 ## 退出码
 
-| 码 | 含义 |
-|----|------|
-| `0` | 全部 Key 检测成功 |
-| `1` | 存在检测失败的 Key |
+
+| 码   | 含义                        |
+| --- | ------------------------- |
+| `0` | 全部 Key 检测成功               |
+| `1` | 存在检测失败的 Key               |
 | `2` | 配置错误（文件不存在、YAML 无效、未知平台等） |
+
 
 ## 项目结构
 
@@ -173,3 +241,4 @@ api-monitor/
     ├── runner.py        # 并发调度
     └── providers/       # 各平台检测实现
 ```
+

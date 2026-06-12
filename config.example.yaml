@@ -1,0 +1,54 @@
+# 全局默认（可被命令行参数覆盖）
+timeout: 10
+concurrency: 5
+max_auto_models: 5   # 未指定 models 时，从 /models 自动选取的前 N 个
+
+providers:
+  openai:
+    base_url: https://api.openai.com/v1
+    keys:
+      - alias: prod
+        api_key: sk-your-openai-key-here
+        models:
+          - gpt-4o-mini
+          - gpt-4o
+      - alias: backup
+        api_key: sk-your-backup-key-here
+        # 不配置 models：先 GET /models，再对返回列表前 max_auto_models 个模型逐个探测
+        models: []
+
+  anthropic:
+    base_url: https://api.anthropic.com
+    keys:
+      - alias: main
+        api_key: sk-ant-your-key-here
+        models: []
+
+  gemini:
+    base_url: https://generativelanguage.googleapis.com
+    keys:
+      - alias: dev
+        api_key: AIza-your-gemini-key-here
+        models: []
+
+  deepseek:
+    base_url: https://api.deepseek.com/v1
+    keys:
+      - alias: main
+        api_key: sk-your-deepseek-key-here
+        models: []
+
+  openrouter:
+    base_url: https://openrouter.ai/api/v1
+    keys:
+      - alias: main
+        api_key: sk-or-your-key-here
+        models: []
+
+  # 自定义 OpenAI 兼容中转站示例
+  openai-compatible:
+    base_url: https://your-proxy.example.com/v1
+    keys:
+      - alias: relay
+        api_key: sk-your-relay-key-here
+        models: []
